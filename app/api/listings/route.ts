@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import prisma from '@/app/libs/prismadb';
 import getCurrentUser from '@/app/actions/getCurrentUser';
+import { getMobileUser } from '@/app/libs/mobileAuth';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -36,9 +37,10 @@ export async function GET(req: NextRequest) {
   );
 }
 
-export async function POST(request: Request) {
-  const currentUser = await getCurrentUser();
-  if (!currentUser) return NextResponse.error();
+export async function POST(request: NextRequest) {
+  const currentUser =
+    (await getMobileUser(request)) ?? (await getCurrentUser());
+  if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
   const { title, description, imageSrc, category, location, price, phone, contactEmail, idProofUrl } = body;
