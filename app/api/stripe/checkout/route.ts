@@ -9,6 +9,8 @@ export async function POST(request: Request) {
   const currentUser = await getCurrentUser();
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
+
   const body = await request.json();
   const { listingId, scheduledDate, scheduledTime, customerPhone, totalPrice } = body;
 
@@ -57,8 +59,8 @@ export async function POST(request: Request) {
       scheduledDate,
       scheduledTime,
     },
-    success_url: `${process.env.NEXTAUTH_URL}/bookings/success?reservation=${reservation.id}`,
-    cancel_url:  `${process.env.NEXTAUTH_URL}/listings/${listingId}`,
+    success_url: `${baseUrl}/bookings/success?reservation=${reservation.id}`,
+    cancel_url:  `${baseUrl}/listings/${listingId}`,
   });
 
   // Store Stripe session ID on the reservation

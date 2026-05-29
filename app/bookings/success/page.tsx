@@ -111,12 +111,20 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
           </div>
         </div>
 
-        <a
-          href="/"
-          className="text-sm text-brand-600 hover:underline font-medium"
-        >
-          ← Browse more services
-        </a>
+        <div className="flex flex-col items-center gap-3">
+          <a
+            href="/bookings"
+            className="px-6 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-semibold hover:bg-brand-700 transition"
+          >
+            View my bookings
+          </a>
+          <a
+            href="/"
+            className="text-sm text-brand-600 hover:underline font-medium"
+          >
+            ← Browse more services
+          </a>
+        </div>
       </div>
     </Container>
   );
