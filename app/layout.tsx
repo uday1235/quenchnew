@@ -5,6 +5,7 @@ import LoginModal from '@/app/components/modals/LoginModal';
 import RegisterModal from '@/app/components/modals/RegisterModal';
 import RentModal from '@/app/components/modals/RentModal';
 import ToasterProvider from '@/app/providers/ToasterProvider';
+import MobileNav from '@/app/components/MobileNav';
 
 import './globals.css';
 import ClientOnly from './components/ClientOnly';
@@ -30,6 +31,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <RegisterModal />
           <RentModal />
           <Navbar currentUser={currentUser} />
+          <MobileNav currentUser={currentUser} />
         </ClientOnly>
         <div className="pb-20 pt-28">
           {children}

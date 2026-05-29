@@ -11,6 +11,7 @@ import useCountries from '@/app/hooks/useCountries';
 import { SafeListing, SafeReservation, SafeUser } from '@/app/types';
 import HeartButton from '../HeartButton';
 import Button from '../Button';
+import StarRating from '../StarRating';
 
 interface ListingCardProps {
   data: SafeListing;
@@ -20,9 +21,11 @@ interface ListingCardProps {
   actionLabel?: string;
   actionId?: string;
   currentUser?: SafeUser | null;
+  avgRating?: number;
+  reviewCount?: number;
 }
 
-const ListingCard: React.FC<ListingCardProps> = ({ data, reservation, onAction, disabled, actionLabel, actionId = '', currentUser }) => {
+const ListingCard: React.FC<ListingCardProps> = ({ data, reservation, onAction, disabled, actionLabel, actionId = '', currentUser, avgRating, reviewCount }) => {
   const router = useRouter();
   const { getByValue } = useCountries();
   const location = getByValue(data.locationValue);
@@ -73,6 +76,15 @@ const ListingCard: React.FC<ListingCardProps> = ({ data, reservation, onAction, 
           <div className="text-xs text-slate-400 mt-0.5">
             {reservationDate || data.category}
           </div>
+          {avgRating !== undefined && (
+            <div className="flex items-center gap-1.5 mt-1">
+              <StarRating value={Math.round(avgRating)} size={13} />
+              <span className="text-xs text-slate-500 font-medium">
+                {avgRating.toFixed(1)}
+                {reviewCount !== undefined && <span className="text-slate-400"> ({reviewCount})</span>}
+              </span>
+            </div>
+          )}
           <div className="flex items-center gap-0.5 mt-2 text-brand-600 font-bold">
             <TbCurrencyRupee size={18} />
             <span className="text-lg">{price}</span>

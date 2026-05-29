@@ -2,6 +2,7 @@
 import getCurrentUser from "@/app/actions/getCurrentUser";
 import getListingById from "@/app/actions/getListingById";
 import getReservations from "@/app/actions/getReservations";
+import getReviews from "@/app/actions/getReviews";
 
 import ClientOnly from "@/app/components/ClientOnly";
 import EmptyState from "@/app/components/EmptyState";
@@ -13,10 +14,11 @@ interface IParams {
 }
 
 const ListingPage = async ({ params }: { params: IParams }) => {
-
-  const listing = await getListingById(params);
-  const reservations = await getReservations(params);
-  const currentUser = await getCurrentUser();
+  const [listing, reservations, currentUser] = await Promise.all([
+    getListingById(params),
+    getReservations(params),
+    getCurrentUser(),
+  ]);
 
   if (!listing) {
     return (
@@ -26,12 +28,21 @@ const ListingPage = async ({ params }: { params: IParams }) => {
     );
   }
 
+  const reviews = await getReviews(listing.id);
+
+  // can review if logged in and has a PAID reservation for this listing
+  const canReview = !!currentUser && reservations.some(
+    (r) => r.userId === currentUser.id && r.status === 'PAID'
+  );
+
   return (
     <ClientOnly>
       <ListingClient
         listing={listing}
         reservations={reservations}
         currentUser={currentUser}
+        reviews={reviews}
+        canReview={canReview}
       />
     </ClientOnly>
   );

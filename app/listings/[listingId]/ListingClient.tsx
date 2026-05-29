@@ -6,20 +6,26 @@ import { toast } from 'react-hot-toast';
 
 import useLoginModal from '@/app/hooks/useLoginModal';
 import { SafeListing, SafeReservation, SafeUser } from '@/app/types';
+import { SafeReview } from '@/app/actions/getReviews';
 
 import Container from '@/app/components/Container';
 import { categories } from '@/app/components/navbar/Categories';
 import ListingHead from '@/app/components/listings/ListingHead';
 import ListingInfo from '@/app/components/listings/ListingInfo';
 import ListingReservation from '@/app/components/listings/ListingReservation';
+import ReviewCard from '@/app/components/ReviewCard';
+import ReviewForm from '@/app/components/ReviewForm';
+import StarRating from '@/app/components/StarRating';
 
 interface ListingClientProps {
   reservations?: SafeReservation[];
   listing: SafeListing & { user: SafeUser };
   currentUser?: SafeUser | null;
+  reviews?: SafeReview[];
+  canReview?: boolean;
 }
 
-const ListingClient: React.FC<ListingClientProps> = ({ listing, currentUser }) => {
+const ListingClient: React.FC<ListingClientProps> = ({ listing, currentUser, reviews = [], canReview = false }) => {
   const loginModal = useLoginModal();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -82,6 +88,41 @@ const ListingClient: React.FC<ListingClientProps> = ({ listing, currentUser }) =
                 disabled={isLoading}
               />
             </div>
+          </div>
+
+          {/* ── Reviews section ── */}
+          <div className="border-t border-slate-100 pt-10 pb-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-playfair text-2xl font-bold text-slate-900">
+                Reviews
+                {reviews.length > 0 && (
+                  <span className="ml-2 text-base font-normal text-slate-400">({reviews.length})</span>
+                )}
+              </h2>
+              {reviews.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <StarRating
+                    value={Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length)}
+                    size={18}
+                  />
+                  <span className="text-sm font-semibold text-slate-700">
+                    {(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {canReview && <div className="mb-6"><ReviewForm listingId={listing.id} /></div>}
+
+            {reviews.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {reviews.map((r) => <ReviewCard key={r.id} review={r} />)}
+              </div>
+            ) : (
+              !canReview && (
+                <p className="text-slate-400 text-sm">No reviews yet. Be the first to review after your booking!</p>
+              )
+            )}
           </div>
         </div>
       </div>

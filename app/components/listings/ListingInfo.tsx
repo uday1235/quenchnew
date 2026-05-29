@@ -1,7 +1,9 @@
 'use client';
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { IconType } from "react-icons";
+import { HiCheckBadge } from "react-icons/hi2";
 
 import useCountries from "@/app/hooks/useCountries";
 import { SafeUser } from "@/app/types";
@@ -43,19 +45,21 @@ const ListingInfo: React.FC<ListingInfoProps> = ({
   return ( 
     <div className="col-span-4 flex flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <div 
-          className="
-            text-xl 
-            font-semibold 
-            flex 
-            flex-row 
-            items-center
-            gap-2
-          "
+        <Link
+          href={`/providers/${user?.id}`}
+          className="flex flex-row items-center gap-3 group w-fit"
         >
-          <div>Hosted by {user?.name}</div>
           <Avatar src={user?.image} />
-        </div>
+          <div>
+            <div className="flex items-center gap-1.5 text-lg font-semibold text-slate-800 group-hover:text-brand-600 transition">
+              {user?.name}
+              {(user as any)?.isVerified && (
+                <HiCheckBadge size={18} className="text-emerald-500 flex-shrink-0" />
+              )}
+            </div>
+            <p className="text-xs text-slate-400 font-normal">View provider profile →</p>
+          </div>
+        </Link>
         <div className="
             flex 
             flex-row 
