@@ -1,12 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import Stripe from 'stripe';
 import prisma from '@/app/libs/prismadb';
 import getCurrentUser from '@/app/actions/getCurrentUser';
+import { getMobileUser } from '@/app/libs/mobileAuth';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-05-27.dahlia' });
 
-export async function POST(request: Request) {
-  const currentUser = await getCurrentUser();
+export async function POST(request: NextRequest) {
+  const isMobile = request.headers.get('x-client') === 'mobile';
+  const currentUser = isMobile
+    ? await getMobileUser(request)
+    : await getCurrentUser();
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
@@ -59,8 +63,12 @@ export async function POST(request: Request) {
       scheduledDate,
       scheduledTime,
     },
-    success_url: `${baseUrl}/bookings/success?reservation=${reservation.id}`,
-    cancel_url:  `${baseUrl}/listings/${listingId}`,
+    success_url: isMobile
+      ? `quench://booking-success?reservation=${reservation.id}`
+      : `${baseUrl}/bookings/success?reservation=${reservation.id}`,
+    cancel_url: isMobile
+      ? `quench://listing/${listingId}`
+      : `${baseUrl}/listings/${listingId}`,
   });
 
   // Store Stripe session ID on the reservation

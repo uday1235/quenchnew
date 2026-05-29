@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Quench",
+    "slug": "quench-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "quench",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#4f46e5"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.quench.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#4f46e5"
+      },
+      "package": "com.quench.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        { "backgroundColor": "#4f46e5" }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
