@@ -5,8 +5,8 @@ import { sendPushToMany } from '@/app/libs/expoPush';
 // Vercel calls this every hour via vercel.json cron
 // Finds bookings scheduled ~1 hour from now and sends a reminder push
 export async function GET(req: Request) {
-  const secret = new URL(req.url).searchParams.get('secret');
-  if (secret !== process.env.CRON_SECRET) {
+  const auth = req.headers.get('authorization');
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

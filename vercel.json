@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/cron/booking-reminders?secret=CRON_SECRET_PLACEHOLDER",
+      "path": "/api/cron/booking-reminders",
       "schedule": "0 * * * *"
     }
   ]
