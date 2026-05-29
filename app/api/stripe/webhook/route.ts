@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import twilio from 'twilio';
 import prisma from '@/app/libs/prismadb';
+import { sendPushNotification } from '@/app/libs/expoPush';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-05-27.dahlia' });
 
@@ -58,16 +59,40 @@ export async function POST(request: Request) {
           );
         }
 
-        // SMS to provider
+        // SMS + push to provider
         const reservation = await prisma.reservation.findUnique({
           where: { id: reservationId },
-          include: { listing: true },
+          include: { listing: true, user: true },
         });
+
         if (reservation?.listing.phone) {
           await sendSMS(
             reservation.listing.phone,
             `🔔 New Booking!\nService: ${listingTitle}\nDate: ${scheduledDate}\nTime: ${scheduledTime}\nCustomer will contact you shortly.`
           );
+        }
+
+        // push → customer
+        if (reservation?.user.pushToken) {
+          await sendPushNotification({
+            to:    reservation.user.pushToken,
+            title: '✅ Booking Confirmed!',
+            body:  `${listingTitle} on ${scheduledDate} at ${scheduledTime}`,
+            data:  { type: 'booking_confirmed', reservationId },
+          });
+        }
+
+        // push → provider
+        const provider = await prisma.user.findUnique({
+          where: { id: reservation?.listing.userId },
+        });
+        if (provider?.pushToken) {
+          await sendPushNotification({
+            to:    provider.pushToken,
+            title: '🔔 New Booking Received!',
+            body:  `${listingTitle} — ${scheduledDate} at ${scheduledTime}`,
+            data:  { type: 'new_booking', reservationId },
+          });
         }
       }
     }

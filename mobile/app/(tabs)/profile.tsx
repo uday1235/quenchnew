@@ -19,11 +19,12 @@ export default function ProfileScreen() {
   };
 
   const menus: MenuItem[] = [
-    { icon: 'calendar-outline',  label: 'My Bookings',   onPress: () => router.push('/(tabs)/bookings') },
-    { icon: 'heart-outline',     label: 'My Favourites', onPress: () => {} },
-    { icon: 'briefcase-outline', label: 'My Services',   onPress: () => {} },
+    { icon: 'calendar-outline',  label: 'My Bookings',      onPress: () => router.push('/(tabs)/bookings') },
+    { icon: 'heart-outline',     label: 'My Favourites',    onPress: () => router.push('/favourites') },
+    { icon: 'briefcase-outline', label: 'My Services',      onPress: () => router.push('/my-services') },
+    { icon: 'receipt-outline',   label: 'My Appointments',  onPress: () => router.push('/appointments') },
     { icon: 'person-outline',    label: 'Provider Profile', onPress: () => user && router.push(`/provider/${user.id}`) },
-    { icon: 'log-out-outline',   label: 'Sign Out',      onPress: handleSignOut, danger: true },
+    { icon: 'log-out-outline',   label: 'Sign Out',         onPress: handleSignOut, danger: true },
   ];
 
   return (
@@ -77,6 +78,12 @@ export default function ProfileScreen() {
           ))}
         </View>
 
+        {/* List a service CTA */}
+        <TouchableOpacity style={styles.listBtn} onPress={() => router.push('/list-service')} activeOpacity={0.85}>
+          <Ionicons name="add-circle-outline" size={20} color={colors.white} />
+          <Text style={styles.listBtnText}>List a New Service</Text>
+        </TouchableOpacity>
+
         <Text style={styles.version}>Quench v1.0 · Made with ❤️</Text>
       </ScrollView>
     </SafeAreaView>
@@ -103,5 +110,7 @@ const styles = StyleSheet.create({
   iconWrapDanger: { backgroundColor: '#fff1f2' },
   menuLabel: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 15, color: colors.slate700 },
   menuLabelDanger: { color: colors.rose },
-  version: { textAlign: 'center', fontFamily: 'Nunito_400Regular', fontSize: 12, color: colors.slate400 },
+  listBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.brand, borderRadius: radius.xl, paddingVertical: 14, ...shadow.sm },
+  listBtnText: { color: colors.white, fontFamily: 'Nunito_800ExtraBold', fontSize: 15 },
+  version:     { textAlign: 'center', fontFamily: 'Nunito_400Regular', fontSize: 12, color: colors.slate400 },
 });

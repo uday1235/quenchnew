@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Image, ActivityIndicator, TextInput, Alert,
+  Image, ActivityIndicator, TextInput, Alert, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import api, { createCheckout } from '@/lib/api';
+
+WebBrowser.maybeCompleteAuthSession();
 import { useAuth } from '@/context/AuthContext';
 import StarRating from '@/components/StarRating';
 import ReviewCard from '@/components/ReviewCard';
@@ -24,13 +27,22 @@ export default function ListingDetailScreen() {
   const { user } = useAuth();
   const router   = useRouter();
 
-  const [listing,  setListing]  = useState<any>(null);
-  const [reviews,  setReviews]  = useState<any[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [date,     setDate]     = useState('');
-  const [time,     setTime]     = useState('');
-  const [phone,    setPhone]    = useState(user?.phone ?? '');
-  const [booking,  setBooking]  = useState(false);
+  const [listing,      setListing]      = useState<any>(null);
+  const [reviews,      setReviews]      = useState<any[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showPicker,   setShowPicker]   = useState(false);
+  const [time,         setTime]         = useState('');
+  const [phone,        setPhone]        = useState(user?.phone ?? '');
+  const [booking,      setBooking]      = useState(false);
+
+  const dateString = selectedDate
+    ? selectedDate.toISOString().split('T')[0]
+    : '';
+
+  const displayDate = selectedDate
+    ? selectedDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })
+    : 'Select a date';
 
   // review form
   const [reviewRating,  setReviewRating]  = useState(0);
@@ -57,15 +69,20 @@ export default function ListingDetailScreen() {
     : null;
 
   const handleBook = async () => {
-    if (!date || !time || !phone) { Alert.alert('Please fill all booking details'); return; }
+    if (!dateString || !time || !phone) { Alert.alert('Please fill all booking details'); return; }
     setBooking(true);
     try {
       const { data } = await createCheckout({
-        listingId: id, scheduledDate: date, scheduledTime: time,
+        listingId: id, scheduledDate: dateString, scheduledTime: time,
         customerPhone: phone, totalPrice: listing.price,
       });
-      await WebBrowser.openAuthSessionAsync(data.url, 'quench://');
-      router.push('/booking-success');
+
+      // open Stripe in browser — user pays and closes the browser
+      await WebBrowser.openBrowserAsync(data.url);
+
+      // give the webhook ~3s to mark the reservation PAID, then go to bookings
+      await new Promise((r) => setTimeout(r, 3000));
+      router.replace('/(tabs)/bookings');
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.error ?? 'Could not start payment');
     } finally {
@@ -164,14 +181,35 @@ export default function ListingDetailScreen() {
 
           <View style={styles.bookingForm}>
             <Text style={styles.fieldLabel}>Date</Text>
-            <TextInput
-              style={styles.dateInput}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.slate400}
-              value={date}
-              onChangeText={setDate}
-              keyboardType="numbers-and-punctuation"
-            />
+            <TouchableOpacity
+              style={[styles.datePicker, !!selectedDate && styles.datePickerSelected]}
+              onPress={() => setShowPicker(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="calendar-outline"
+                size={18}
+                color={selectedDate ? colors.brand : colors.slate400}
+              />
+              <Text style={[styles.datePickerText, !!selectedDate && styles.datePickerTextSelected]}>
+                {displayDate}
+              </Text>
+            </TouchableOpacity>
+
+            {showPicker && (
+              <DateTimePicker
+                value={selectedDate ?? new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
+                minimumDate={new Date()}
+                onChange={(_, picked) => {
+                  setShowPicker(Platform.OS === 'ios');
+                  if (picked) setSelectedDate(picked);
+                }}
+                themeVariant="light"
+                accentColor={colors.brand}
+              />
+            )}
 
             <Text style={styles.fieldLabel}>Time Slot</Text>
             <View style={styles.slotsGrid}>
@@ -261,7 +299,7 @@ const styles = StyleSheet.create({
   ratingCount: { fontSize: 11, color: colors.slate400, fontFamily: 'Nunito_400Regular' },
   catBadge: { alignSelf: 'flex-start', backgroundColor: colors.brandLight, paddingHorizontal: 12, paddingVertical: 5, borderRadius: radius.full },
   catText: { fontSize: 12, fontWeight: '700', color: colors.brand },
-  desc: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: colors.slate600, lineHeight: 22 },
+  desc: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: colors.slate700, lineHeight: 22 },
   providerCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.white, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.slate100, ...shadow.sm },
   providerAvatar: { width: 44, height: 44, borderRadius: 22 },
   providerName: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: colors.slate900 },
@@ -272,10 +310,14 @@ const styles = StyleSheet.create({
   bookingForm: { backgroundColor: colors.white, borderRadius: radius.xl, padding: spacing.lg, gap: spacing.md, borderWidth: 1, borderColor: colors.slate100, ...shadow.sm },
   fieldLabel: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: colors.slate700 },
   dateInput: { borderWidth: 2, borderColor: colors.slate200, borderRadius: radius.xl, paddingHorizontal: spacing.md, paddingVertical: 12, fontSize: 15, color: colors.slate900, fontFamily: 'Nunito_400Regular' },
+  datePicker: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 2, borderColor: colors.slate200, borderRadius: radius.xl, paddingHorizontal: spacing.md, paddingVertical: 14, backgroundColor: colors.white },
+  datePickerSelected: { borderColor: colors.brand, backgroundColor: colors.brandLight },
+  datePickerText: { fontSize: 14, fontFamily: 'Nunito_400Regular', color: colors.slate400, flex: 1 },
+  datePickerTextSelected: { color: colors.brand, fontFamily: 'Nunito_700Bold' },
   slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   slot: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.slate200, backgroundColor: colors.white },
   slotActive: { backgroundColor: colors.brand, borderColor: colors.brand },
-  slotText: { fontSize: 12, fontWeight: '700', color: colors.slate600 },
+  slotText: { fontSize: 12, fontWeight: '700', color: colors.slate700 },
   slotTextActive: { color: colors.white },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.slate100, paddingTop: spacing.sm },
   priceLabel: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: colors.slate700 },

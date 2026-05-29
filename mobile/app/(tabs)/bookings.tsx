@@ -23,7 +23,7 @@ export default function BookingsScreen() {
 
   const load = useCallback(async () => {
     try {
-      const { data } = await api.get('/reservations', { params: { userId: user?.id } });
+      const { data } = await api.get('/reservations');
       setReservations(data);
     } finally {
       setLoading(false);
