@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  name                 String?
+  email                String?   @unique
+  emailVerified        DateTime?
+  image                String?
+  hashedPassword       String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  favoriteIds          String[]  @db.ObjectId
+
+  role                 String    @default("CUSTOMER")   // CUSTOMER | PROVIDER
+  phone                String?
+  contactEmail         String?
+  bio                  String?
+  idProofUrl           String?
+  isVerified           Boolean   @default(false)
+
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  subscriptionStatus   String?   // active | canceled | past_due | trialing
+
+  accounts     Account[]
+  listings     Listing[]
+  reservations Reservation[]
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.String
+  access_token      String? @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.String
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Listing {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  description   String
+  imageSrc      String
+  createdAt     DateTime @default(now())
+  category      String
+  locationValue String
+  userId        String   @db.ObjectId
+  price         Int
+
+  // provider contact — revealed after payment
+  phone         String?
+  contactEmail  String?
+
+  // legacy fields kept for backward compat
+  roomCount     Int @default(1)
+  bathroomCount Int @default(1)
+  guestCount    Int @default(1)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+}
+
+model Reservation {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  listingId       String   @db.ObjectId
+  startDate       DateTime
+  endDate         DateTime
+  totalPrice      Int
+  createdAt       DateTime @default(now())
+
+  scheduledDate   String?
+  scheduledTime   String?
+  customerPhone   String?
+
+  status          String   @default("PENDING") // PENDING | PAID | CONFIRMED | CANCELLED
+  stripePaymentId String?
+  stripeSessionId String?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
