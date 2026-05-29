@@ -1,4 +1,4 @@
-import { Nunito } from 'next/font/google';
+import { Nunito, Playfair_Display } from 'next/font/google';
 
 import Navbar from '@/app/components/navbar/Navbar';
 import LoginModal from '@/app/components/modals/LoginModal';
@@ -16,13 +16,14 @@ export const metadata = {
 };
 
 const font = Nunito({ subsets: ['latin'] });
+const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair' });
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const currentUser = await getCurrentUser();
 
   return (
     <html lang="en">
-      <body className={font.className}>
+      <body className={`${font.className} ${playfair.variable}`}>
         <ClientOnly>
           <ToasterProvider />
           <LoginModal />
