@@ -2,15 +2,17 @@ import { redirect } from 'next/navigation';
 import prisma from '@/app/libs/prismadb';
 import getCurrentUser from '@/app/actions/getCurrentUser';
 import Container from '@/app/components/Container';
+import MobileRedirect from '@/app/components/MobileRedirect';
 import { HiCheckCircle, HiPhone, HiMail, HiCalendar, HiClock } from 'react-icons/hi';
 
 interface SuccessPageProps {
-  searchParams: { reservation?: string };
+  searchParams: { reservation?: string; mobile?: string };
 }
 
 export default async function BookingSuccessPage({ searchParams }: SuccessPageProps) {
+  const isMobile = searchParams.mobile === '1';
   const currentUser = await getCurrentUser();
-  if (!currentUser) redirect('/');
+  if (!currentUser && !isMobile) redirect('/');
 
   const reservationId = searchParams.reservation;
   if (!reservationId) redirect('/');
@@ -20,13 +22,15 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
     include: { listing: true },
   });
 
-  if (!reservation || reservation.userId !== currentUser.id) redirect('/');
+  if (!reservation || (!isMobile && reservation.userId !== currentUser?.id)) redirect('/');
 
   const isPaid = reservation.status === 'PAID' || reservation.status === 'CONFIRMED';
 
   return (
     <Container>
       <div className="max-w-lg mx-auto py-16 flex flex-col items-center gap-8">
+        {isMobile && <MobileRedirect reservationId={reservationId} />}
+
         {/* success icon */}
         <div className="flex flex-col items-center gap-3 text-center">
           <HiCheckCircle size={64} className="text-emerald-500" />
