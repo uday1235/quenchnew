@@ -63,12 +63,8 @@ export async function POST(request: NextRequest) {
       scheduledDate,
       scheduledTime,
     },
-    success_url: isMobile
-      ? `quench://booking-success?reservation=${reservation.id}`
-      : `${baseUrl}/bookings/success?reservation=${reservation.id}`,
-    cancel_url: isMobile
-      ? `quench://listing/${listingId}`
-      : `${baseUrl}/listings/${listingId}`,
+    success_url: `${baseUrl}/bookings/success?reservation=${reservation.id}`,
+    cancel_url:  `${baseUrl}/listings/${listingId}`,
   });
 
   // Store Stripe session ID on the reservation
