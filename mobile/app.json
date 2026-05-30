@@ -18,21 +18,37 @@
       "adaptiveIcon": {
         "backgroundColor": "#4f46e5"
       },
-      "package": "com.quench.app"
+      "package": "com.quench.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "expo-notifications",
       [
         "expo-splash-screen",
         {
           "backgroundColor": "#4f46e5"
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Quench needs access to your photos to upload service images."
+        }
+      ],
       "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5cd71186-edcc-461c-ad65-a1d7ceb80f52"
+      }
     }
   }
 }

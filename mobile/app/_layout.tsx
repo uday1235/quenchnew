@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import Constants from 'expo-constants';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { useFonts, Nunito_400Regular, Nunito_700Bold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
 import { PlayfairDisplay_700Bold, PlayfairDisplay_400Regular } from '@expo-google-fonts/playfair-display';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -14,66 +14,70 @@ import api from '@/lib/api';
 
 SplashScreen.preventAutoHideAsync();
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList:   true,
-    shouldPlaySound:  true,
-    shouldSetBadge:   true,
-  }),
-});
-
-async function registerForPushNotifications(): Promise<string | null> {
-  if (!Device.isDevice) return null;
-
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-    });
-  }
-
-  const { status: existing } = await Notifications.getPermissionsAsync();
-  let finalStatus = existing;
-  if (existing !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-  if (finalStatus !== 'granted') return null;
-
-  const projectId = Constants.expoConfig?.extra?.eas?.projectId
-    ?? Constants.easConfig?.projectId;
-
-  const { data: token } = await Notifications.getExpoPushTokenAsync(
-    projectId ? { projectId } : undefined as any
-  );
-  return token;
-}
+// Expo Go does not support remote push notifications from SDK 53+
+// This is only active in development builds and production
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 function NotificationHandler() {
   const router = useRouter();
   const { user } = useAuth();
-  const responseListener = useRef<Notifications.EventSubscription | null>(null);
+  const responseListener = useRef<any>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || isExpoGo) return;
 
-    registerForPushNotifications().then((token) => {
-      if (token) api.post('/mobile/push-token', { token }).catch(() => {});
-    });
+    try {
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowBanner: true,
+          shouldShowList:   true,
+          shouldPlaySound:  true,
+          shouldSetBadge:   true,
+        }),
+      });
 
-    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data as any;
-      if (data?.type === 'booking_confirmed' || data?.type === 'booking_reminder') {
-        router.push('/(tabs)/bookings');
-      }
-      if (data?.type === 'new_booking') {
-        router.push('/appointments');
-      }
-    });
+      // register push token
+      (async () => {
+        if (!Device.isDevice) return;
 
-    return () => { responseListener.current?.remove(); };
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('default', {
+            name: 'default',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+          });
+        }
+
+        const { status: existing } = await Notifications.getPermissionsAsync();
+        let finalStatus = existing;
+        if (existing !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        if (finalStatus !== 'granted') return;
+
+        const projectId = Constants.expoConfig?.extra?.eas?.projectId
+          ?? Constants.easConfig?.projectId;
+
+        const { data: token } = await Notifications.getExpoPushTokenAsync(
+          projectId ? { projectId } : undefined as any
+        );
+        if (token) api.post('/mobile/push-token', { token }).catch(() => {});
+      })();
+
+      // handle notification taps
+      responseListener.current = Notifications.addNotificationResponseReceivedListener((res) => {
+        const data = res.notification.request.content.data as any;
+        if (data?.type === 'booking_confirmed' || data?.type === 'booking_reminder') {
+          router.push('/(tabs)/bookings');
+        }
+        if (data?.type === 'new_booking') router.push('/appointments');
+      });
+    } catch {
+      // silently fail in environments that don't support push
+    }
+
+    return () => { responseListener.current?.remove?.(); };
   }, [user]);
 
   return null;
